@@ -1,0 +1,18 @@
+# Node modules
+node_modules
+
+# Dependency lock file (optional - see notes below)
+package-lock.json
+
+# Environment variables
+.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Optional: OS/Editor/System files
+.DS_Store
+Thumbs.db
+.vscode/
