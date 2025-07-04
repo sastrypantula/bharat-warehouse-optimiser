@@ -106,6 +106,10 @@ export default function GridEditor({
     simulationState.robotPosition &&
     simulationState.robotPosition.x === col &&
     simulationState.robotPosition.y === row;
+    const isCollectedShelf =
+      cellType === CellType.SHELF &&
+      simulationState.collectedShelves &&
+      simulationState.collectedShelves.some(s => s.gridX === col && s.gridY === row);
     
     let backgroundColor = 'white';
     let borderColor = 'hsl(var(--warehouse-300))';
@@ -113,8 +117,8 @@ export default function GridEditor({
     
     switch (cellType) {
       case CellType.SHELF:
-        backgroundColor = '#fbbf24';
-        borderColor = '#f59e0b';
+        backgroundColor = isCollectedShelf ? 'rgba(34,197,94,0.25)' : '#fbbf24';
+        borderColor = isCollectedShelf ? '#22c55e' : '#f59e0b';
         break;
       case CellType.ROBOT_START:
         backgroundColor = '#4ade80';
@@ -207,23 +211,46 @@ export default function GridEditor({
         >
           {gridData.map((row, rowIndex) =>
             row.map((cellType, colIndex) => {
+              const isRobotPosition =
+                simulationState.robotPosition &&
+                simulationState.robotPosition.x === colIndex &&
+                simulationState.robotPosition.y === rowIndex;
+              const isCollectedShelf =
+                cellType === CellType.SHELF &&
+                simulationState.collectedShelves &&
+                simulationState.collectedShelves.some(s => s.gridX === colIndex && s.gridY === rowIndex);
               const cellStyle = getCellStyle(cellType, rowIndex, colIndex);
               
               return (
                 <div
                   key={`${rowIndex}-${colIndex}`}
                   className={cn(
-                    "w-8 h-8 flex items-center justify-center text-xs cursor-pointer transition-all duration-200 hover:opacity-80 rounded-sm",
+                    "w-8 h-8 flex items-center justify-center text-xs cursor-pointer transition-all duration-200 hover:opacity-80 rounded-sm relative",
                     cellStyle.className
                   )}
                   onClick={() => handleCellClick(rowIndex, colIndex)}
                   title={`${cellType} (Row: ${rowIndex}, Col: ${colIndex})`}
                   style={{
                     backgroundColor: cellStyle.backgroundColor,
-                    border: cellStyle.border
+                    border: cellStyle.border,
+                    position: 'relative',
+                    overflow: 'hidden',
                   }}
                 >
-                  {getCellIcon(cellType,rowIndex, colIndex)}
+                  {isRobotPosition ? "🤖" : getCellIcon(cellType, rowIndex, colIndex)}
+                  {isCollectedShelf && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'rgba(34,197,94,0.25)', // green-500 with 25% opacity
+                      zIndex: 2,
+                      pointerEvents: 'none',
+                      borderRadius: '0.25rem',
+                    }} />
+                  )}
                 </div>
               );
             })

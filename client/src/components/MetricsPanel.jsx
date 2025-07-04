@@ -120,7 +120,12 @@ export default function MetricsPanel({ currentMetrics, layouts, simulationState 
               Step {simulationState.currentStep} of {simulationState.totalSteps}
               {simulationState.currentOrderItem && (
                 <div className="mt-1">
-                  Current: {simulationState.currentOrderItem?.item?? 'N/A'}
+                  Current Target: {simulationState.currentOrderItem?.item ?? 'N/A'}
+                </div>
+              )}
+              {simulationState.collectedShelves && simulationState.collectedShelves.length > 0 && (
+                <div className="mt-1">
+                  Collected Shelves: {simulationState.collectedShelves.map(s => s.item).join(', ')}
                 </div>
               )}
             </div>

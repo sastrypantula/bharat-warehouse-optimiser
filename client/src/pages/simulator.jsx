@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import GridEditor from "../components/GridEditor.jsx";
 import ComponentPalette from "../components/ComponentPalette.jsx";
@@ -22,6 +22,9 @@ export default function Simulator() {
     targetPosition: null,
     currentOrderItem: null,
     path: [],
+    collectedShelves: [],
+    liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 100 },
+    shelfPositions: [],
   });
   const [shelfProductMap, setShelfProductMap] = useState({});
   const { data: layouts = [] } = useQuery({ queryKey: ["http://localhost:5000/api/layouts"] });
@@ -42,6 +45,56 @@ export default function Simulator() {
   }));
 };
 
+  function calculateDistanceUpTo(path, step) {
+    if (!path || path.length < 2 || step < 1) return 0;
+    let dist = 0;
+    for (let i = 1; i <= step && i < path.length; i++) {
+      dist += Math.abs(path[i].x - path[i-1].x) + Math.abs(path[i].y - path[i-1].y);
+    }
+    return dist * 100; // in cm
+  }
+
+  useEffect(() => {
+    if (!simulationState.isRunning || simulationState.isPaused) return;
+    if (!simulationState.path || simulationState.path.length === 0) return;
+    if (simulationState.currentStep >= simulationState.path.length - 1) return;
+
+    const timer = setTimeout(() => {
+      setSimulationState(prev => {
+        const nextStep = prev.currentStep + 1;
+        const nextPos = prev.path[nextStep];
+        let collectedShelves = prev.collectedShelves;
+        let newCollected = false;
+        for (const shelf of prev.shelfPositions) {
+          if (!collectedShelves.some(s => s.gridX === shelf.gridX && s.gridY === shelf.gridY)
+            && shelf.gridX === nextPos.x && shelf.gridY === nextPos.y) {
+            collectedShelves = [...collectedShelves, shelf];
+            newCollected = true;
+          }
+        }
+        const remainingShelves = prev.shelfPositions.filter(shelf =>
+          !collectedShelves.some(cs => cs.gridX === shelf.gridX && cs.gridY === shelf.gridY)
+        );
+        const currentOrderItem = remainingShelves[0] || null;
+        const totalDistance = calculateDistanceUpTo(prev.path, nextStep);
+        const totalTime = prev.liveMetrics.totalTime * (totalDistance / (prev.liveMetrics.totalDistance || 1));
+        const efficiency = prev.liveMetrics.efficiency || 100;
+        return {
+          ...prev,
+          currentStep: nextStep,
+          robotPosition: nextPos,
+          collectedShelves,
+          currentOrderItem,
+          liveMetrics: {
+            totalDistance,
+            totalTime: isNaN(totalTime) ? 0 : totalTime,
+            efficiency,
+          },
+        };
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [simulationState.isRunning, simulationState.isPaused, simulationState.currentStep, simulationState.path]);
 
   const handleStartSimulation = () => {
   if (isLoading) {
@@ -59,36 +112,29 @@ export default function Simulator() {
   const grid = gridRef.current;
   console.log("✅ Loaded grid from layout", grid);
 
-  const engine = new SimulationEngine(grid, gridSize);
-  console.log("🛠️ Simulation engine initialized");
-  console.log(shelfProductMap)
-  const convertedItems = orderItems.map(item => {
-    const location = Object.entries(shelfProductMap).find(
-      ([_, name]) => name.toLowerCase() === item.item.toLowerCase()
-    );
-
-    if (!location) {
-      console.warn(`⚠️ No shelf location found for item "${item.item}"`);
-      return null;
+  // Gather all shelf positions from the grid
+  const shelfPositions = [];
+  for (let row = 0; row < grid.length; row++) {
+    for (let col = 0; col < grid[row].length; col++) {
+      if (grid[row][col] === 'shelf') {
+        shelfPositions.push({ gridX: col, gridY: row, item: `Shelf (${col},${row})` });
+      }
     }
+  }
 
-    const [y, x] = location[0].split(",").map(Number);
-    console.log(`📦 Mapped item "${item.item}" to grid position: (${x}, ${y})`);
+  if (shelfPositions.length === 0) {
+    alert("No shelves found on the grid. Please add at least one shelf.");
+    return;
+  }
 
-    return {
-      ...item,
-      gridX: x,
-      gridY: y,
-    };
-  }).filter(Boolean);
-
-  console.log("🧾 Converted order items with positions:", convertedItems);
+  console.log("🧾 All shelf positions:", shelfPositions);
 
   try {
-    const simResult = engine.planSimulation(grid, convertedItems);
+    const engine = new SimulationEngine(grid, gridSize);
+    const simResult = engine.planSimulation(grid, shelfPositions);
     console.log("✅ Simulation plan result:", simResult);
 
-    const steps = engine.generateSimulationSteps(simResult.totalPath, convertedItems);
+    const steps = engine.generateSimulationSteps(simResult.totalPath, shelfPositions);
     console.log("📈 Generated simulation steps:", steps);
 
     setSimulationState(prev => ({
@@ -98,7 +144,15 @@ export default function Simulator() {
       path: simResult.totalPath,
       currentStep: 0,
       totalSteps: steps.length,
-      currentOrderItem: convertedItems[0],
+      currentOrderItem: shelfPositions[0],
+      robotPosition: simResult.totalPath[0] || null,
+      collectedShelves: [],
+      liveMetrics: {
+        totalDistance: simResult.totalDistance,
+        totalTime: simResult.totalTime,
+        efficiency: simResult.efficiency,
+      },
+      shelfPositions,
     }));
 
     console.log("🚀 Simulation started and state updated");
@@ -131,6 +185,9 @@ export default function Simulator() {
       targetPosition: null,
       currentOrderItem: null,
       path: [],
+      collectedShelves: [],
+      liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 100 },
+      shelfPositions: [],
     });
   };
 
@@ -246,6 +303,9 @@ export default function Simulator() {
             <ComponentPalette
               selectedComponent={selectedComponent}
               onComponentSelect={setSelectedComponent}
+              shelfProductMap={shelfProductMap}
+              collectedShelves={simulationState.collectedShelves}
+              currentOrderItem={simulationState.currentOrderItem}
             />
           </div>
 
@@ -266,7 +326,7 @@ export default function Simulator() {
           {/* Metrics Panel */}
           <div className="lg:col-span-1">
             <MetricsPanel
-              currentMetrics={currentMetrics}
+              currentMetrics={simulationState.liveMetrics}
               layouts={layouts}
               simulationState={simulationState}
             />

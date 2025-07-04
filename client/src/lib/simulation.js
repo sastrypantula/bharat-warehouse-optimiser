@@ -30,79 +30,79 @@ export class SimulationEngine {
     return null;
   }
 
-  planSimulation(grid, orderItems) {
-  const robotStart = this.findRobotStartPosition(grid);
-  const packingStation = this.findPackingStationPosition(grid);
+  planSimulation(grid, shelfPositions) {
+    const robotStart = this.findRobotStartPosition(grid);
+    const packingStation = this.findPackingStationPosition(grid);
 
-  if (!robotStart || !packingStation) {
-    throw new Error("❌ Robot start position or packing station not found");
-  }
-
-  console.log(`✅ Robot start: (${robotStart.x}, ${robotStart.y})`);
-  console.log(`📦 Packing station: (${packingStation.x}, ${packingStation.y})`);
-
-  let currentPosition = robotStart;
-  let totalPath = [robotStart];
-  let totalDistance = 0;
-
-  for (const item of orderItems) {
-    if (item.gridX !== null && item.gridY !== null) {
-      const itemPosition = { x: item.gridX, y: item.gridY };
-      console.log(`🧭 Finding path to item "${item.item}" at (${item.gridX}, ${item.gridY})`);
-
-      const pathToItem = this.pathfindingService.findPath(currentPosition, itemPosition);
-      console.log("📍 Path to item:", pathToItem.map(p => `(${p.x},${p.y})`).join(" -> "));
-
-      if (pathToItem.length > 0) {
-        const lastStep = totalPath[totalPath.length - 1];
-        const sameStart = lastStep && lastStep.x === pathToItem[0].x && lastStep.y === pathToItem[0].y;
-
-        totalPath.push(...(sameStart ? pathToItem.slice(1) : pathToItem));
-        totalDistance += this.pathfindingService.calculatePathDistance(pathToItem);
-        currentPosition = itemPosition;
-      } else {
-        console.warn(`⚠️ No path found to item "${item.item}" at (${item.gridX}, ${item.gridY})`);
-      }
-    } else {
-      console.warn(`⚠️ Skipping item "${item.item}" with no grid position`);
+    if (!robotStart || !packingStation) {
+      throw new Error("❌ Robot start position or packing station not found");
     }
+
+    console.log(`✅ Robot start: (${robotStart.x}, ${robotStart.y})`);
+    console.log(`📦 Packing station: (${packingStation.x}, ${packingStation.y})`);
+
+    let currentPosition = robotStart;
+    let totalPath = [robotStart];
+    let totalDistance = 0;
+
+    for (const shelf of shelfPositions) {
+      if (shelf.gridX !== null && shelf.gridY !== null) {
+        const shelfPosition = { x: shelf.gridX, y: shelf.gridY };
+        console.log(`🧭 Finding path to shelf at (${shelf.gridX}, ${shelf.gridY})`);
+
+        const pathToShelf = this.pathfindingService.findPath(currentPosition, shelfPosition);
+        console.log("📍 Path to shelf:", pathToShelf.map(p => `(${p.x},${p.y})`).join(" -> "));
+
+        if (pathToShelf.length > 0) {
+          const lastStep = totalPath[totalPath.length - 1];
+          const sameStart = lastStep && lastStep.x === pathToShelf[0].x && lastStep.y === pathToShelf[0].y;
+
+          totalPath.push(...(sameStart ? pathToShelf.slice(1) : pathToShelf));
+          totalDistance += this.pathfindingService.calculatePathDistance(pathToShelf);
+          currentPosition = shelfPosition;
+        } else {
+          console.warn(`⚠️ No path found to shelf at (${shelf.gridX}, ${shelf.gridY})`);
+        }
+      } else {
+        console.warn(`⚠️ Skipping shelf with no grid position`);
+      }
+    }
+
+    const pathToPacking = this.pathfindingService.findPath(currentPosition, packingStation);
+    console.log("📦 Path to packing station:", pathToPacking.map(p => `(${p.x},${p.y})`).join(" -> "));
+
+    if (pathToPacking.length > 0) {
+      const lastStep = totalPath[totalPath.length - 1];
+      const sameStart = lastStep && lastStep.x === pathToPacking[0].x && lastStep.y === pathToPacking[0].y;
+
+      totalPath.push(...(sameStart ? pathToPacking.slice(1) : pathToPacking));
+      totalDistance += this.pathfindingService.calculatePathDistance(pathToPacking);
+    } else {
+      console.warn("⚠️ No path to packing station found");
+    }
+
+    const totalTime = this.pathfindingService.calculateTravelTime(totalDistance, this.robotSpeed);
+    const optimalDistance = this.calculateOptimalDistance(robotStart, shelfPositions, packingStation);
+    const efficiency = Math.round((optimalDistance / totalDistance) * 100);
+
+    return {
+      totalPath,
+      totalDistance,
+      totalTime,
+      efficiency: Math.min(efficiency, 100),
+    };
   }
 
-  const pathToPacking = this.pathfindingService.findPath(currentPosition, packingStation);
-  console.log("📦 Path to packing station:", pathToPacking.map(p => `(${p.x},${p.y})`).join(" -> "));
-
-  if (pathToPacking.length > 0) {
-    const lastStep = totalPath[totalPath.length - 1];
-    const sameStart = lastStep && lastStep.x === pathToPacking[0].x && lastStep.y === pathToPacking[0].y;
-
-    totalPath.push(...(sameStart ? pathToPacking.slice(1) : pathToPacking));
-    totalDistance += this.pathfindingService.calculatePathDistance(pathToPacking);
-  } else {
-    console.warn("⚠️ No path to packing station found");
-  }
-
-  const totalTime = this.pathfindingService.calculateTravelTime(totalDistance, this.robotSpeed);
-  const optimalDistance = this.calculateOptimalDistance(robotStart, orderItems, packingStation);
-  const efficiency = Math.round((optimalDistance / totalDistance) * 100);
-
-  return {
-    totalPath,
-    totalDistance,
-    totalTime,
-    efficiency: Math.min(efficiency, 100),
-  };
-}
-
-  calculateOptimalDistance(start, orderItems, packingStation) {
+  calculateOptimalDistance(start, shelfPositions, packingStation) {
     // Calculate Manhattan distance for optimal path
     let optimalDistance = 0;
     let currentPos = start;
 
-    for (const item of orderItems) {
-      if (item.gridX !== null && item.gridY !== null) {
-        const itemPos = { x: item.gridX, y: item.gridY };
-        optimalDistance += this.manhattanDistance(currentPos, itemPos) * 100;
-        currentPos = itemPos;
+    for (const shelf of shelfPositions) {
+      if (shelf.gridX !== null && shelf.gridY !== null) {
+        const shelfPos = { x: shelf.gridX, y: shelf.gridY };
+        optimalDistance += this.manhattanDistance(currentPos, shelfPos) * 100;
+        currentPos = shelfPos;
       }
     }
 
@@ -114,23 +114,23 @@ export class SimulationEngine {
     return Math.abs(pos1.x - pos2.x) + Math.abs(pos1.y - pos2.y);
   }
 
-  generateSimulationSteps(totalPath, orderItems) {
+  generateSimulationSteps(totalPath, shelfPositions) {
     const steps = [];
-    let currentOrderIndex = 0;
-    let currentTarget = orderItems[currentOrderIndex];
+    let currentShelfIndex = 0;
+    let currentTarget = shelfPositions[currentShelfIndex];
 
     for (let i = 0; i < totalPath.length; i++) {
       const position = totalPath[i];
       let action = "Moving";
       let targetItem = currentTarget?.item;
 
-      // Check if we're at an order item position
+      // Check if we're at a shelf position
       if (currentTarget && 
           currentTarget.gridX === position.x && 
           currentTarget.gridY === position.y) {
-        action = `Picking up ${currentTarget.item}`;
-        currentOrderIndex++;
-        currentTarget = orderItems[currentOrderIndex];
+        action = `Picking up at shelf (${currentTarget.gridX},${currentTarget.gridY})`;
+        currentShelfIndex++;
+        currentTarget = shelfPositions[currentShelfIndex];
       } else if (i === totalPath.length - 1) {
         action = "Delivering to packing station";
         targetItem = undefined;

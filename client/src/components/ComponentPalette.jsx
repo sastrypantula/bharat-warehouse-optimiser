@@ -1,12 +1,7 @@
 import { CellType } from "../../../shared/schema";
 import { cn } from "../lib/utils.js";
-import { useQuery } from "@tanstack/react-query";
 
-export default function ComponentPalette({ selectedComponent, onComponentSelect }) {
-  const { data: orderItems = [], isLoading } = useQuery({ 
-    queryKey: ["http://localhost:5000/api/order-items"] 
-  });
-
+export default function ComponentPalette({ selectedComponent, onComponentSelect, shelfProductMap, collectedShelves, currentOrderItem }) {
   const components = [
     {
       type: CellType.SHELF,
@@ -58,6 +53,8 @@ export default function ComponentPalette({ selectedComponent, onComponentSelect 
     }
   };
 
+  const shelfEntries = Object.entries(shelfProductMap);
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-warehouse-200">
       <h3 className="text-lg font-semibold mb-4 text-warehouse-900">
@@ -103,35 +100,31 @@ export default function ComponentPalette({ selectedComponent, onComponentSelect 
         <h4 className="font-semibold mb-3 text-warehouse-900">
           Current Order Items
         </h4>
-        
-        {isLoading ? (
-          <div className="text-sm text-warehouse-500">
-            Loading order items...
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {orderItems.map((item) => (
-              <div 
-                key={item.id} 
-                className="flex items-center justify-between p-2 rounded text-sm bg-warehouse-50 border border-warehouse-200"
+        <div className="space-y-2">
+          {shelfEntries.length === 0 && (
+            <div className="text-sm text-center p-3 rounded bg-warehouse-50 border border-warehouse-200 text-warehouse-500">
+              No order items found
+            </div>
+          )}
+          {shelfEntries.map(([key, itemName]) => {
+            const [row, col] = key.split(',').map(Number);
+            const isCollected = collectedShelves && collectedShelves.some(s => s.gridX === col && s.gridY === row);
+            const isCurrent = currentOrderItem && currentOrderItem.gridX === col && currentOrderItem.gridY === row;
+            return (
+              <div
+                key={key}
+                className={`flex items-center justify-between p-2 rounded text-sm bg-warehouse-50 border border-warehouse-200 ${isCurrent ? 'ring-2 ring-green-500' : ''}`}
               >
                 <div className="flex items-center space-x-2">
                   <span className="text-base">📦</span>
-                  <span className="font-medium text-warehouse-800">{item.item}</span>
+                  <span className="font-medium text-warehouse-800">{itemName}</span>
+                  {isCurrent && <span className="ml-1 text-green-600">(Current)</span>}
                 </div>
-                {/* <span className="text-xs px-2 py-1 rounded bg-warehouse-100 text-warehouse-600">
-                  {item.shelfLocation}
-                </span> */}
+                {isCollected && <span className="text-green-600 text-lg">✔️</span>}
               </div>
-            ))}
-            
-            {orderItems.length === 0 && (
-              <div className="text-sm text-center p-3 rounded bg-warehouse-50 border border-warehouse-200 text-warehouse-500">
-                No order items found
-              </div>
-            )}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </div>
 
       {/* Instructions */}
