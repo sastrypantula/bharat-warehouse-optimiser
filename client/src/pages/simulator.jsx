@@ -25,6 +25,7 @@ export default function Simulator() {
     collectedShelves: [],
     liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 100 },
     shelfPositions: [],
+    totalOptimalDistance: 0,
   });
   const [shelfProductMap, setShelfProductMap] = useState({});
   const { data: layouts = [] } = useQuery({ queryKey: ["http://localhost:5000/api/layouts"] });
@@ -37,6 +38,7 @@ export default function Simulator() {
     totalTime: 36,
     efficiency: 92,
   };
+  const [robotSpeed, setRobotSpeed] = useState(1);
 
   const handleRobotPlaced = (pos) => {
   setSimulationState(prev => ({
@@ -77,8 +79,11 @@ export default function Simulator() {
         );
         const currentOrderItem = remainingShelves[0] || null;
         const totalDistance = calculateDistanceUpTo(prev.path, nextStep);
-        const totalTime = prev.liveMetrics.totalTime * (totalDistance / (prev.liveMetrics.totalDistance || 1));
-        const efficiency = prev.liveMetrics.efficiency || 100;
+        const totalOptimalDistance = prev.totalOptimalDistance || 1;
+        const efficiency = totalDistance > 0 ? Math.min(Math.round((totalOptimalDistance / totalDistance) * 100), 100) : 100;
+        const totalTime = robotSpeed > 0 ? (totalDistance / 100) / robotSpeed : 0;
+        // Debug logs
+        console.log('[Efficiency Debug] totalOptimalDistance:', totalOptimalDistance, 'totalDistance:', totalDistance, 'efficiency:', efficiency);
         return {
           ...prev,
           currentStep: nextStep,
@@ -92,9 +97,9 @@ export default function Simulator() {
           },
         };
       });
-    }, 300);
+    }, 300 / robotSpeed);
     return () => clearTimeout(timer);
-  }, [simulationState.isRunning, simulationState.isPaused, simulationState.currentStep, simulationState.path]);
+  }, [simulationState.isRunning, simulationState.isPaused, simulationState.currentStep, simulationState.path, robotSpeed]);
 
   const handleStartSimulation = () => {
   if (isLoading) {
@@ -130,7 +135,7 @@ export default function Simulator() {
   console.log("🧾 All shelf positions:", shelfPositions);
 
   try {
-    const engine = new SimulationEngine(grid, gridSize);
+    const engine = new SimulationEngine(grid, gridSize, robotSpeed);
     const simResult = engine.planSimulation(grid, shelfPositions);
     console.log("✅ Simulation plan result:", simResult);
 
@@ -153,6 +158,7 @@ export default function Simulator() {
         efficiency: simResult.efficiency,
       },
       shelfPositions,
+      totalOptimalDistance: simResult.optimalDistance,
     }));
 
     console.log("🚀 Simulation started and state updated");
@@ -188,6 +194,7 @@ export default function Simulator() {
       collectedShelves: [],
       liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 100 },
       shelfPositions: [],
+      totalOptimalDistance: 0,
     });
   };
 
@@ -276,6 +283,8 @@ export default function Simulator() {
                 onPause={handlePauseSimulation}
                 onStop={handleStopSimulation}
                 onReset={handleResetSimulation}
+                robotSpeed={robotSpeed}
+                setRobotSpeed={setRobotSpeed}
               />
             </div>
             <div className="flex items-center space-x-4">

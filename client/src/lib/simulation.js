@@ -83,6 +83,7 @@ export class SimulationEngine {
 
     const totalTime = this.pathfindingService.calculateTravelTime(totalDistance, this.robotSpeed);
     const optimalDistance = this.calculateOptimalDistance(robotStart, shelfPositions, packingStation);
+    console.log('[SimulationEngine] optimalDistance:', optimalDistance);
     const efficiency = Math.round((optimalDistance / totalDistance) * 100);
 
     return {
@@ -90,6 +91,7 @@ export class SimulationEngine {
       totalDistance,
       totalTime,
       efficiency: Math.min(efficiency, 100),
+      optimalDistance,
     };
   }
 

@@ -6,6 +6,8 @@ export default function SimulationControls({
   onPause,
   onStop,
   onReset,
+  robotSpeed,
+  setRobotSpeed,
 }) {
   return (
     <div className="flex items-center space-x-2">
@@ -62,12 +64,13 @@ export default function SimulationControls({
         </label>
         <select 
           className="text-sm border border-warehouse-300 rounded px-2 py-1 bg-white text-warehouse-700"
-          defaultValue="1"
+          value={robotSpeed}
+          onChange={e => setRobotSpeed(Number(e.target.value))}
         >
-          <option value="0.5">0.5x</option>
-          <option value="1">1x</option>
-          <option value="2">2x</option>
-          <option value="5">5x</option>
+          <option value={0.5}>0.5x</option>
+          <option value={1}>1x</option>
+          <option value={2}>2x</option>
+          <option value={5}>5x</option>
         </select>
       </div>
     </div>
