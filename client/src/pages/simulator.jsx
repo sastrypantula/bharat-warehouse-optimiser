@@ -13,6 +13,8 @@ export default function Simulator() {
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const gridRef = useRef(null);
+  const [season, setSeason] = useState('normal');
+  const [robotSpeed, setRobotSpeed] = useState(1);
   const [simulationState, setSimulationState] = useState({
     isRunning: false,
     isPaused: false,
@@ -23,29 +25,21 @@ export default function Simulator() {
     currentOrderItem: null,
     path: [],
     collectedShelves: [],
-    liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 100 },
+    liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 100, costSavings: 0 },
     shelfPositions: [],
     totalOptimalDistance: 0,
   });
   const [shelfProductMap, setShelfProductMap] = useState({});
   const { data: layouts = [] } = useQuery({ queryKey: ["http://localhost:5000/api/layouts"] });
-  const { data: currentLayout,isLoading } = useQuery({ queryKey: ["http://localhost:5000/api/layouts/1"] });
-  const { data: orderItems = [] } = useQuery({
-  queryKey: ["http://localhost:5000/api/order-items"]
-});
-  const currentMetrics = {
-    totalDistance: 2400,
-    totalTime: 36,
-    efficiency: 92,
-  };
-  const [robotSpeed, setRobotSpeed] = useState(1);
+  const { data: currentLayout, isLoading } = useQuery({ queryKey: ["http://localhost:5000/api/layouts/1"] });
+  const { data: orderItems = [] } = useQuery({ queryKey: ["http://localhost:5000/api/order-items"] });
 
   const handleRobotPlaced = (pos) => {
-  setSimulationState(prev => ({
-    ...prev,
-    robotPosition: pos || { x: -1, y: -1 }
-  }));
-};
+    setSimulationState(prev => ({
+      ...prev,
+      robotPosition: pos || { x: -1, y: -1 }
+    }));
+  };
 
   function calculateDistanceUpTo(path, step) {
     if (!path || path.length < 2 || step < 1) return 0;
@@ -66,12 +60,10 @@ export default function Simulator() {
         const nextStep = prev.currentStep + 1;
         const nextPos = prev.path[nextStep];
         let collectedShelves = prev.collectedShelves;
-        let newCollected = false;
         for (const shelf of prev.shelfPositions) {
           if (!collectedShelves.some(s => s.gridX === shelf.gridX && s.gridY === shelf.gridY)
             && shelf.gridX === nextPos.x && shelf.gridY === nextPos.y) {
             collectedShelves = [...collectedShelves, shelf];
-            newCollected = true;
           }
         }
         const remainingShelves = prev.shelfPositions.filter(shelf =>
@@ -82,8 +74,6 @@ export default function Simulator() {
         const totalOptimalDistance = prev.totalOptimalDistance || 1;
         const efficiency = totalDistance > 0 ? Math.min(Math.round((totalOptimalDistance / totalDistance) * 100), 100) : 100;
         const totalTime = robotSpeed > 0 ? (totalDistance / 100) / robotSpeed : 0;
-        // Debug logs
-        console.log('[Efficiency Debug] totalOptimalDistance:', totalOptimalDistance, 'totalDistance:', totalDistance, 'efficiency:', efficiency);
         return {
           ...prev,
           currentStep: nextStep,
@@ -91,6 +81,7 @@ export default function Simulator() {
           collectedShelves,
           currentOrderItem,
           liveMetrics: {
+            ...prev.liveMetrics,
             totalDistance,
             totalTime: isNaN(totalTime) ? 0 : totalTime,
             efficiency,
@@ -102,71 +93,57 @@ export default function Simulator() {
   }, [simulationState.isRunning, simulationState.isPaused, simulationState.currentStep, simulationState.path, robotSpeed]);
 
   const handleStartSimulation = () => {
-  if (isLoading) {
-    console.warn("⚠️ Layout is still loading...");
-    return;
-  }
-
-  console.log("🟡 Start simulation clicked");
-
-  if (!gridRef.current) {
-    console.error("❌ No grid found (gridRef.current is null)");
-    return;
-  }
-
-  const grid = gridRef.current;
-  console.log("✅ Loaded grid from layout", grid);
-
-  // Gather all shelf positions from the grid
-  const shelfPositions = [];
-  for (let row = 0; row < grid.length; row++) {
-    for (let col = 0; col < grid[row].length; col++) {
-      if (grid[row][col] === 'shelf') {
-        shelfPositions.push({ gridX: col, gridY: row, item: `Shelf (${col},${row})` });
+    if (isLoading) {
+      console.warn("⚠️ Layout is still loading...");
+      return;
+    }
+    if (!gridRef.current) {
+      console.error("❌ No grid found (gridRef.current is null)");
+      return;
+    }
+    const grid = gridRef.current;
+    // Gather all shelf positions from the grid
+    const shelfPositions = [];
+    for (let row = 0; row < grid.length; row++) {
+      for (let col = 0; col < grid[row].length; col++) {
+        if (grid[row][col] === 'shelf') {
+          shelfPositions.push({ gridX: col, gridY: row, item: `Shelf (${col},${row})` });
+        }
       }
     }
-  }
-
-  if (shelfPositions.length === 0) {
-    alert("No shelves found on the grid. Please add at least one shelf.");
-    return;
-  }
-
-  console.log("🧾 All shelf positions:", shelfPositions);
-
-  try {
-    const engine = new SimulationEngine(grid, gridSize, robotSpeed);
-    const simResult = engine.planSimulation(grid, shelfPositions);
-    console.log("✅ Simulation plan result:", simResult);
-
-    const steps = engine.generateSimulationSteps(simResult.totalPath, shelfPositions);
-    console.log("📈 Generated simulation steps:", steps);
-
-    setSimulationState(prev => ({
-      ...prev,
-      isRunning: true,
-      isPaused: false,
-      path: simResult.totalPath,
-      currentStep: 0,
-      totalSteps: steps.length,
-      currentOrderItem: shelfPositions[0],
-      robotPosition: simResult.totalPath[0] || null,
-      collectedShelves: [],
-      liveMetrics: {
-        totalDistance: simResult.totalDistance,
-        totalTime: simResult.totalTime,
-        efficiency: simResult.efficiency,
-      },
-      shelfPositions,
-      totalOptimalDistance: simResult.optimalDistance,
-    }));
-
-    console.log("🚀 Simulation started and state updated");
-  } catch (err) {
-    console.error("❌ Simulation planning failed:", err.message);
-    alert("Simulation failed: " + err.message);
-  }
-};
+    if (shelfPositions.length === 0) {
+      alert("No shelves found on the grid. Please add at least one shelf.");
+      return;
+    }
+    try {
+      // Pass the selected season to the SimulationEngine
+      const engine = new SimulationEngine(grid, gridSize, robotSpeed, season);
+      const simResult = engine.planSimulation(grid, shelfPositions);
+      const steps = engine.generateSimulationSteps(simResult.totalPath, shelfPositions);
+      setSimulationState(prev => ({
+        ...prev,
+        isRunning: true,
+        isPaused: false,
+        path: simResult.totalPath,
+        currentStep: 0,
+        totalSteps: steps.length,
+        currentOrderItem: shelfPositions[0],
+        robotPosition: simResult.totalPath[0] || null,
+        collectedShelves: [],
+        liveMetrics: {
+          totalDistance: simResult.totalDistance,
+          totalTime: simResult.totalTime,
+          efficiency: simResult.efficiency,
+          costSavings: simResult.costSavings || 0,
+        },
+        shelfPositions,
+        totalOptimalDistance: simResult.optimalDistance,
+      }));
+    } catch (err) {
+      console.error("❌ Simulation planning failed:", err.message);
+      alert("Simulation failed: " + err.message);
+    }
+  };
 
   const handlePauseSimulation = () => {
     setSimulationState(prev => ({ ...prev, isPaused: !prev.isPaused }));
@@ -192,38 +169,33 @@ export default function Simulator() {
       currentOrderItem: null,
       path: [],
       collectedShelves: [],
-      liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 100 },
+      liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 100, costSavings: 0 },
       shelfPositions: [],
       totalOptimalDistance: 0,
     });
   };
 
   const handleSaveLayout = async () => {
-  if (!gridRef.current) {
-    alert("Grid not ready to save.");
-    return;
-  }
-
-  const layoutToSave = {
-    name: "Current Layout",
-    gridData: gridRef.current,
+    if (!gridRef.current) {
+      alert("Grid not ready to save.");
+      return;
+    }
+    const layoutToSave = {
+      name: "Current Layout",
+      gridData: gridRef.current,
+    };
+    try {
+      const res = await fetch("http://localhost:5000/api/layouts/1", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(layoutToSave),
+      });
+      if (!res.ok) throw new Error("Failed to save layout");
+      alert("✅ Layout saved successfully!");
+    } catch (err) {
+      alert("❌ Save failed: " + err.message);
+    }
   };
-
-  try {
-    const res = await fetch("http://localhost:5000/api/layouts/1", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(layoutToSave),
-    });
-
-    if (!res.ok) throw new Error("Failed to save layout");
-
-    alert("✅ Layout saved successfully!");
-  } catch (err) {
-    alert("❌ Save failed: " + err.message);
-  }
-};
-
 
   if (showAnalytics) {
     return (
@@ -245,9 +217,6 @@ export default function Simulator() {
                 <Bot className="h-8 w-8 text-primary" />
                 <h1 className="text-2xl font-bold text-warehouse-900">MFU Simulator</h1>
               </div>
-              {/* <span className="text-sm text-warehouse-500 bg-warehouse-100 px-2 py-1 rounded-full">
-                JavaScript Edition
-              </span> */}
             </div>
             <div className="flex items-center space-x-4">
               <button 
@@ -258,13 +227,12 @@ export default function Simulator() {
                 Analytics
               </button>
               <button 
-  onClick={handleSaveLayout}
-  className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
->
-  <Save className="w-4 h-4 mr-2" />
-  Save Layout
-</button>
-
+                onClick={handleSaveLayout}
+                className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save Layout
+              </button>
             </div>
           </div>
         </div>
@@ -278,13 +246,17 @@ export default function Simulator() {
             <div className="flex items-center space-x-4">
               <h2 className="text-lg font-semibold text-warehouse-900">Layout Designer</h2>
               <SimulationControls
-                simulationState={simulationState}
+                isRunning={simulationState.isRunning}
+                isPaused={simulationState.isPaused}
                 onStart={handleStartSimulation}
                 onPause={handlePauseSimulation}
                 onStop={handleStopSimulation}
                 onReset={handleResetSimulation}
                 robotSpeed={robotSpeed}
-                setRobotSpeed={setRobotSpeed}
+                onSpeedChange={setRobotSpeed}
+                currentMetrics={simulationState.liveMetrics}
+                season={season}
+                onSeasonChange={setSeason}
               />
             </div>
             <div className="flex items-center space-x-4">

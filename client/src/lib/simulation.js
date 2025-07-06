@@ -2,10 +2,17 @@ import { CellType } from "../../../shared/schema.js";
 import { PathfindingService } from "./pathfinding.js";
 
 export class SimulationEngine {
-  constructor(grid, gridSize, robotSpeed = 5) {
+  constructor(grid, gridSize, robotSpeed = 5, season = 'normal') {
     this.pathfindingService = new PathfindingService(grid, gridSize);
     this.robotSpeed = robotSpeed;
     this.gridSize = gridSize;
+    this.season = season; // 'normal', 'black-friday', 'christmas', 'holiday'
+    this.seasonMultipliers = {
+      'normal': { orderVolume: 1, efficiency: 1, robotSpeed: 1 },
+      'black-friday': { orderVolume: 2.5, efficiency: 0.85, robotSpeed: 1.2 },
+      'christmas': { orderVolume: 2.0, efficiency: 0.9, robotSpeed: 1.1 },
+      'holiday': { orderVolume: 1.8, efficiency: 0.95, robotSpeed: 1.05 }
+    };
   }
 
   findRobotStartPosition(grid) {
@@ -30,6 +37,50 @@ export class SimulationEngine {
     return null;
   }
 
+  // Walmart-specific holiday optimization
+  optimizeForHolidaySeason(shelfPositions) {
+    const multiplier = this.seasonMultipliers[this.season];
+    
+    // During peak seasons, prioritize high-demand items
+    const prioritizedShelves = shelfPositions.map(shelf => ({
+      ...shelf,
+      priority: this.calculateHolidayPriority(shelf),
+      demandMultiplier: multiplier.orderVolume
+    }));
+
+    // Sort by priority (high-demand items first)
+    return prioritizedShelves.sort((a, b) => b.priority - a.priority);
+  }
+
+  calculateHolidayPriority(shelf) {
+    // Simulate holiday demand patterns
+    const holidayItems = {
+      'electronics': 10,
+      'toys': 9,
+      'clothing': 8,
+      'home': 7,
+      'food': 6,
+      'default': 5
+    };
+
+    // Extract item type from shelf name (in real implementation, this would come from inventory data)
+    const itemType = this.extractItemType(shelf.item);
+    return holidayItems[itemType] || holidayItems.default;
+  }
+
+  extractItemType(itemName) {
+    if (!itemName) return 'default';
+    const name = itemName.toLowerCase();
+    
+    if (name.includes('toy') || name.includes('game')) return 'toys';
+    if (name.includes('phone') || name.includes('laptop') || name.includes('tv')) return 'electronics';
+    if (name.includes('shirt') || name.includes('pants') || name.includes('dress')) return 'clothing';
+    if (name.includes('furniture') || name.includes('decor')) return 'home';
+    if (name.includes('food') || name.includes('milk') || name.includes('bread')) return 'food';
+    
+    return 'default';
+  }
+
   planSimulation(grid, shelfPositions) {
     const robotStart = this.findRobotStartPosition(grid);
     const packingStation = this.findPackingStationPosition(grid);
@@ -40,15 +91,20 @@ export class SimulationEngine {
 
     console.log(`✅ Robot start: (${robotStart.x}, ${robotStart.y})`);
     console.log(`📦 Packing station: (${packingStation.x}, ${packingStation.y})`);
+    console.log(`🎄 Season: ${this.season} - Order volume: ${this.seasonMultipliers[this.season].orderVolume}x`);
 
+    // Apply holiday optimization
+    const optimizedShelves = this.optimizeForHolidaySeason(shelfPositions);
+    
     let currentPosition = robotStart;
     let totalPath = [robotStart];
     let totalDistance = 0;
+    let totalOrders = 0;
 
-    for (const shelf of shelfPositions) {
+    for (const shelf of optimizedShelves) {
       if (shelf.gridX !== null && shelf.gridY !== null) {
         const shelfPosition = { x: shelf.gridX, y: shelf.gridY };
-        console.log(`🧭 Finding path to shelf at (${shelf.gridX}, ${shelf.gridY})`);
+        console.log(`🧭 Finding path to ${shelf.item} at (${shelf.gridX}, ${shelf.gridY}) - Priority: ${shelf.priority}`);
 
         const pathToShelf = this.pathfindingService.findPath(currentPosition, shelfPosition);
         console.log("📍 Path to shelf:", pathToShelf.map(p => `(${p.x},${p.y})`).join(" -> "));
@@ -60,6 +116,7 @@ export class SimulationEngine {
           totalPath.push(...(sameStart ? pathToShelf.slice(1) : pathToShelf));
           totalDistance += this.pathfindingService.calculatePathDistance(pathToShelf);
           currentPosition = shelfPosition;
+          totalOrders += shelf.demandMultiplier || 1;
         } else {
           console.warn(`⚠️ No path found to shelf at (${shelf.gridX}, ${shelf.gridY})`);
         }
@@ -81,18 +138,68 @@ export class SimulationEngine {
       console.warn("⚠️ No path to packing station found");
     }
 
-    const totalTime = this.pathfindingService.calculateTravelTime(totalDistance, this.robotSpeed);
-    const optimalDistance = this.calculateOptimalDistance(robotStart, shelfPositions, packingStation);
+    // Apply season-specific adjustments
+    const seasonMultiplier = this.seasonMultipliers[this.season];
+    const adjustedRobotSpeed = this.robotSpeed * seasonMultiplier.robotSpeed;
+    const totalTime = this.pathfindingService.calculateTravelTime(totalDistance, adjustedRobotSpeed);
+    const optimalDistance = this.calculateOptimalDistance(robotStart, optimizedShelves, packingStation);
     console.log('[SimulationEngine] optimalDistance:', optimalDistance);
-    const efficiency = Math.round((optimalDistance / totalDistance) * 100);
+    
+    // Calculate efficiency with season adjustment
+    const baseEfficiency = Math.round((optimalDistance / totalDistance) * 100);
+    const seasonEfficiency = Math.round(baseEfficiency * seasonMultiplier.efficiency);
+
+    // Calculate cost savings based on Walmart's metrics
+    const costSavings = this.calculateCostSavings(totalDistance, optimalDistance, totalOrders, this.season);
+    const carbonReduction = this.calculateCarbonReduction(totalDistance, optimalDistance);
 
     return {
       totalPath,
       totalDistance,
       totalTime,
-      efficiency: Math.min(efficiency, 100),
+      efficiency: Math.min(seasonEfficiency, 100),
       optimalDistance,
+      totalOrders,
+      costSavings,
+      carbonReduction,
+      season: this.season,
+      seasonMultiplier: seasonMultiplier.orderVolume
     };
+  }
+
+  calculateCostSavings(actualDistance, optimalDistance, totalOrders, season) {
+    // Walmart-specific cost calculations
+    const costPerMeter = 0.15; // Estimated cost per meter of travel
+    const laborCostPerHour = 25; // Average warehouse worker cost
+    const robotCostPerHour = 15; // Robot operational cost
+    
+    const distanceSavings = optimalDistance - actualDistance;
+    const timeSavings = distanceSavings / 100; // Convert cm to meters, then to time
+    
+    const fuelSavings = distanceSavings * costPerMeter;
+    const laborSavings = timeSavings * laborCostPerHour;
+    const robotSavings = timeSavings * robotCostPerHour;
+    
+    // Season multiplier for cost impact
+    const seasonCostMultiplier = {
+      'normal': 1,
+      'black-friday': 2.5,
+      'christmas': 2.0,
+      'holiday': 1.8
+    }[season] || 1;
+    
+    return Math.round((fuelSavings + laborSavings + robotSavings) * seasonCostMultiplier);
+  }
+
+  calculateCarbonReduction(actualDistance, optimalDistance) {
+    // Calculate carbon footprint reduction
+    const carbonPerMeter = 0.0002; // kg CO2 per meter
+    const distanceReduction = Math.max(0, actualDistance - optimalDistance);
+    const carbonReduction = (distanceReduction / 100) * carbonPerMeter; // Convert cm to meters
+    
+    // Convert to percentage (assuming 100% reduction is 50% of current)
+    const maxPossibleReduction = actualDistance * carbonPerMeter * 0.5;
+    return Math.round((carbonReduction / maxPossibleReduction) * 100);
   }
 
   calculateOptimalDistance(start, shelfPositions, packingStation) {
@@ -147,5 +254,40 @@ export class SimulationEngine {
     }
 
     return steps;
+  }
+
+  // Walmart-specific method for holiday season planning
+  generateHolidayRecommendations(shelfPositions) {
+    const recommendations = [];
+    
+    // Analyze shelf distribution
+    const shelfCount = shelfPositions.length;
+    const avgDistance = shelfPositions.reduce((sum, shelf) => {
+      return sum + (shelf.gridX + shelf.gridY);
+    }, 0) / shelfCount;
+
+    if (avgDistance > 10) {
+      recommendations.push({
+        type: 'warning',
+        message: 'High average shelf distance detected. Consider clustering frequently ordered items.',
+        impact: 'Could reduce travel time by 15-20%'
+      });
+    }
+
+    // Check for holiday item distribution
+    const holidayItems = shelfPositions.filter(shelf => 
+      this.extractItemType(shelf.item) === 'toys' || 
+      this.extractItemType(shelf.item) === 'electronics'
+    );
+
+    if (holidayItems.length < shelfCount * 0.3) {
+      recommendations.push({
+        type: 'info',
+        message: 'Consider increasing holiday item allocation during peak seasons.',
+        impact: 'Could improve order fulfillment speed by 25%'
+      });
+    }
+
+    return recommendations;
   }
 }
