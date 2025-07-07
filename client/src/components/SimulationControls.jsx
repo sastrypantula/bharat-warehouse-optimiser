@@ -121,7 +121,7 @@ export default function SimulationControls({
           step="0.1"
           value={robotSpeed}
           onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
-          className="w-full h-2 bg-warehouse-200 rounded-lg appearance-none cursor-pointer slider"
+          className="w-full h-2 bg-warehouse-200 rounded-lg cursor-pointer slider"
         />
         <div className="flex justify-between text-xs text-warehouse-500 mt-1">
           <span>0.5x (Slow)</span>

@@ -30,6 +30,7 @@ export default function Simulator() {
     totalOptimalDistance: 0,
   });
   const [shelfProductMap, setShelfProductMap] = useState({});
+  const [orderItem, setOrderItem] = useState([]);
   const { data: layouts = [] } = useQuery({ queryKey: ["http://localhost:5000/api/layouts"] });
   const { data: currentLayout, isLoading } = useQuery({ queryKey: ["http://localhost:5000/api/layouts/1"] });
   const { data: orderItems = [] } = useQuery({ queryKey: ["http://localhost:5000/api/order-items"] });
@@ -102,6 +103,12 @@ export default function Simulator() {
       return;
     }
     const grid = gridRef.current;
+
+    if (orderItem.length === 0) {
+    alert("No order items selected. Please add items to the order.");
+    return;
+  }
+
     // Gather all shelf positions from the grid
     const shelfPositions = [];
     for (let row = 0; row < grid.length; row++) {
@@ -118,8 +125,8 @@ export default function Simulator() {
     try {
       // Pass the selected season to the SimulationEngine
       const engine = new SimulationEngine(grid, gridSize, robotSpeed, season);
-      const simResult = engine.planSimulation(grid, shelfPositions);
-      const steps = engine.generateSimulationSteps(simResult.totalPath, shelfPositions);
+      const simResult = engine.planSimulation(grid, orderItem);
+      const steps = engine.generateSimulationSteps(simResult.totalPath, orderItem);
       setSimulationState(prev => ({
         ...prev,
         isRunning: true,
@@ -287,6 +294,8 @@ export default function Simulator() {
               shelfProductMap={shelfProductMap}
               collectedShelves={simulationState.collectedShelves}
               currentOrderItem={simulationState.currentOrderItem}
+              orderItem={orderItem}
+              setOrderItem={setOrderItem}
             />
           </div>
 

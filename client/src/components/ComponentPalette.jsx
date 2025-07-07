@@ -1,7 +1,9 @@
 import { CellType } from "../../../shared/schema";
 import { cn } from "../lib/utils.js";
 
-export default function ComponentPalette({ selectedComponent, onComponentSelect, shelfProductMap, collectedShelves, currentOrderItem }) {
+export default function ComponentPalette({ selectedComponent, onComponentSelect, shelfProductMap, collectedShelves, currentOrderItem,
+  orderItem, setOrderItem
+ }) {
   const components = [
     {
       type: CellType.SHELF,
@@ -53,12 +55,26 @@ export default function ComponentPalette({ selectedComponent, onComponentSelect,
     }
   };
 
+  console.log(selectedComponent, "selectedComponent");
+
   const shelfEntries = Object.entries(shelfProductMap);
+
+  const handleAddToOrder = (gridX, gridY, itemName) => {
+    setOrderItem((prev) => {
+      // Prevent duplicates
+      if (prev.some(item => item.gridX === gridX && item.gridY === gridY)) return prev;
+      return [...prev, { item: itemName, gridX, gridY }];
+    });
+  };
+
+  const handleRemoveFromOrder = (gridX, gridY) => {
+    setOrderItem((prev) => prev.filter(item => item.gridX !== gridX || item.gridY !== gridY));
+  };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-warehouse-200">
       <h3 className="text-lg font-semibold mb-4 text-warehouse-900">
-        Component Palette
+        🧱 Layout Tools
       </h3>
       
       <div className="space-y-3">
@@ -85,11 +101,11 @@ export default function ComponentPalette({ selectedComponent, onComponentSelect,
       {/* Current Selection */}
       <div className="mt-4 p-3 rounded bg-warehouse-50 border border-warehouse-200">
         <h4 className="text-sm font-semibold mb-2 text-warehouse-700">
-          Selected Tool:
+          ✏️ Selected Tool:
         </h4>
         <p className="text-sm text-warehouse-600">
           {selectedComponent ? 
-            `${components.find(c => c.type === selectedComponent)?.name || 'Unknown'}` : 
+            `${components.find(c => c.type === selectedComponent || (selectedComponent === CellType.EMPTY && c.type === "eraser"))?.name || 'None selected'}` : 
             'None selected'
           }
         </p>
@@ -97,45 +113,83 @@ export default function ComponentPalette({ selectedComponent, onComponentSelect,
       
       {/* Order Configuration */}
       <div className="mt-6 pt-6 border-t border-warehouse-200">
-        <h4 className="font-semibold mb-3 text-warehouse-900">
-          Current Order Items
-        </h4>
-        <div className="space-y-2">
-          {shelfEntries.length === 0 && (
-            <div className="text-sm text-center p-3 rounded bg-warehouse-50 border border-warehouse-200 text-warehouse-500">
-              No order items found
-            </div>
-          )}
-          {shelfEntries.map(([key, itemName]) => {
-            const [row, col] = key.split(',').map(Number);
-            const isCollected = collectedShelves && collectedShelves.some(s => s.gridX === col && s.gridY === row);
-            const isCurrent = currentOrderItem && currentOrderItem.gridX === col && currentOrderItem.gridY === row;
-            return (
-              <div
-                key={key}
-                className={`flex items-center justify-between p-2 rounded text-sm bg-warehouse-50 border border-warehouse-200 ${isCurrent ? 'ring-2 ring-green-500' : ''}`}
-              >
-                <div className="flex items-center space-x-2">
-                  <span className="text-base">📦</span>
-                  <span className="font-medium text-warehouse-800">{itemName}</span>
-                  {isCurrent && <span className="ml-1 text-green-600">(Current)</span>}
-                </div>
-                {isCollected && <span className="text-green-600 text-lg">✔️</span>}
-              </div>
-            );
-          })}
-        </div>
+  <h4 className="font-semibold mb-3 text-warehouse-900">
+    🗃️ Available Shelf Items (Click to add/remove)
+  </h4>
+  <div className="space-y-2">
+    {shelfEntries.length === 0 && (
+      <div className="text-sm text-center p-3 rounded bg-warehouse-50 border border-warehouse-200 text-warehouse-500">
+        No shelves available
       </div>
+    )}
+    {shelfEntries.map(([key, itemName]) => {
+      const [row, col] = key.split(',').map(Number);
+      const isSelected = orderItem.some(item => item.gridX === col && item.gridY === row);
+      return (
+        <div
+          key={key}
+          className={`flex items-center justify-between p-2 rounded text-sm bg-warehouse-50 border border-warehouse-200`}
+        >
+          <div className="flex items-center space-x-2">
+            <span className="text-base">📦</span>
+            <span className="font-medium text-warehouse-800">{itemName}</span>
+            <span className="text-warehouse-500 text-xs">({col},{row})</span>
+          </div>
+          <button
+            className={`text-xs font-semibold px-2 py-1 rounded 
+              ${isSelected ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+            onClick={() => {
+              isSelected
+                ? handleRemoveFromOrder(col, row)
+                : handleAddToOrder(col, row, itemName);
+            }}
+          >
+            {isSelected ? 'Remove' : 'Add'}
+          </button>
+        </div>
+      );
+    })}
+  </div>
+</div>
+
+{/* Currently Selected Order Items */}
+<div className="mt-6 pt-6 border-t border-warehouse-200">
+  <h4 className="font-semibold mb-3 text-warehouse-900">🧾 Current Order</h4>
+  {orderItem.length === 0 ? (
+    <div className="text-sm text-center p-3 rounded bg-warehouse-50 border border-warehouse-200 text-warehouse-500">
+      No order items selected
+    </div>
+  ) : (
+    <ul className="space-y-1">
+      {orderItem.map((item, idx) => (
+        <li key={`${item.gridX},${item.gridY}`} className="flex justify-between items-center px-3 py-1 bg-warehouse-50 border border-warehouse-200 rounded text-sm">
+          <div className="flex items-center space-x-2">
+            <span>📦</span>
+            <span className="text-warehouse-800">{item.item}</span>
+            <span className="text-warehouse-500 text-xs">({item.gridX},{item.gridY})</span>
+          </div>
+          <button
+            onClick={() => handleRemoveFromOrder(item.gridX, item.gridY)}
+            className="text-red-500 text-xs hover:underline"
+          >
+            Remove
+          </button>
+        </li>
+      ))}
+    </ul>
+  )}
+</div>
 
       {/* Instructions */}
       <div className="mt-4 p-3 rounded text-xs bg-warehouse-50 border border-warehouse-200">
-        <strong className="text-warehouse-700">Instructions:</strong>
-        <ul className="mt-1 space-y-1 text-warehouse-600">
-          <li>• Select a component above</li>
-          <li>• Click on grid cells to place</li>
-          <li>• Use eraser to clear cells</li>
-          <li>• Only one robot start & packing station allowed</li>
-        </ul>
+        <strong className="text-warehouse-700">📌 Instructions:</strong>
+<ul className="mt-1 space-y-1 text-warehouse-600 text-xs">
+  <li>• Select a tool (shelf, robot, packing station)</li>
+  <li>• Click grid cells to place components</li>
+  <li>• Use 🗑️ Eraser to remove placed components</li>
+  <li>• Only one robot and one packing station allowed</li>
+  <li>• Use 🗃️ shelf selector to add/remove order items</li>
+</ul>
       </div>
     </div>
   );
