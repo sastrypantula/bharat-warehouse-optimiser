@@ -81,6 +81,41 @@ export class SimulationEngine {
     return 'default';
   }
 
+  // --- TSP Solver for optimal shelf order ---
+  solveTSP(start, shelves, end) {
+    // Brute-force for small N (N <= 7 is reasonable)
+    if (shelves.length <= 1) return shelves;
+    const perms = this.permute(shelves);
+    let minDist = Infinity;
+    let bestOrder = shelves;
+    for (const perm of perms) {
+      let dist = 0;
+      let curr = start;
+      for (const shelf of perm) {
+        dist += this.manhattanDistance(curr, { x: shelf.gridX, y: shelf.gridY });
+        curr = { x: shelf.gridX, y: shelf.gridY };
+      }
+      dist += this.manhattanDistance(curr, end);
+      if (dist < minDist) {
+        minDist = dist;
+        bestOrder = perm;
+      }
+    }
+    return bestOrder;
+  }
+
+  permute(arr) {
+    if (arr.length <= 1) return [arr];
+    const result = [];
+    for (let i = 0; i < arr.length; i++) {
+      const rest = arr.slice(0, i).concat(arr.slice(i + 1));
+      for (const perm of this.permute(rest)) {
+        result.push([arr[i], ...perm]);
+      }
+    }
+    return result;
+  }
+
   planSimulation(grid, shelfPositions) {
     const robotStart = this.findRobotStartPosition(grid);
     const packingStation = this.findPackingStationPosition(grid);
@@ -93,18 +128,24 @@ export class SimulationEngine {
     console.log(`📦 Packing station: (${packingStation.x}, ${packingStation.y})`);
     console.log(`🎄 Season: ${this.season} - Order volume: ${this.seasonMultipliers[this.season].orderVolume}x`);
 
-    // Apply holiday optimization
-    const optimizedShelves = this.optimizeForHolidaySeason(shelfPositions);
-    
+    let orderedShelves;
+    if (this.season === 'normal') {
+      // Use TSP for optimal order
+      orderedShelves = this.solveTSP(robotStart, shelfPositions, packingStation);
+    } else {
+      // Use demand/priority order for holiday/demand seasons
+      orderedShelves = this.optimizeForHolidaySeason(shelfPositions);
+    }
+
     let currentPosition = robotStart;
     let totalPath = [robotStart];
     let totalDistance = 0;
     let totalOrders = 0;
 
-    for (const shelf of optimizedShelves) {
+    for (const shelf of orderedShelves) {
       if (shelf.gridX !== null && shelf.gridY !== null) {
         const shelfPosition = { x: shelf.gridX, y: shelf.gridY };
-        console.log(`🧭 Finding path to ${shelf.item} at (${shelf.gridX}, ${shelf.gridY}) - Priority: ${shelf.priority}`);
+        console.log(`🧭 Finding path to ${shelf.item} at (${shelf.gridX}, ${shelf.gridY})`);
 
         const pathToShelf = this.pathfindingService.findPath(currentPosition, shelfPosition);
         console.log("📍 Path to shelf:", pathToShelf.map(p => `(${p.x},${p.y})`).join(" -> "));
@@ -142,7 +183,7 @@ export class SimulationEngine {
     const seasonMultiplier = this.seasonMultipliers[this.season];
     const adjustedRobotSpeed = this.robotSpeed * seasonMultiplier.robotSpeed;
     const totalTime = this.pathfindingService.calculateTravelTime(totalDistance, adjustedRobotSpeed);
-    const optimalDistance = this.calculateOptimalDistance(robotStart, optimizedShelves, packingStation);
+    const optimalDistance = this.calculateOptimalDistance(robotStart, orderedShelves, packingStation);
     console.log('[SimulationEngine] optimalDistance:', optimalDistance);
     
     // Calculate efficiency with season adjustment

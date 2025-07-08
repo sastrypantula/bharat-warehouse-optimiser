@@ -208,6 +208,8 @@ export default function Simulator() {
     return (
       <AnalyticsDashboard 
         layouts={layouts}
+        simulationState={simulationState}
+        season={season}
         onClose={() => setShowAnalytics(false)}
       />
     );
