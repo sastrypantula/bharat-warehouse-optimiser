@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import GridEditor from "../components/GridEditor.jsx";
 import ComponentPalette from "../components/ComponentPalette.jsx";
 import MetricsPanel from "../components/MetricsPanel.jsx";
@@ -34,6 +34,37 @@ export default function Simulator() {
   const { data: layouts = [] } = useQuery({ queryKey: ["http://localhost:5000/api/layouts"] });
   const { data: currentLayout, isLoading } = useQuery({ queryKey: ["http://localhost:5000/api/layouts/1"] });
   const { data: orderItems = [] } = useQuery({ queryKey: ["http://localhost:5000/api/order-items"] });
+
+  const createLayoutMutation = useMutation({
+    mutationFn: async (layoutData) => {
+      const res = await fetch("http://localhost:5000/api/layouts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(layoutData),
+      });
+      return res.json();
+    },
+  });
+
+  const handleNewLayout = async () => {
+    if (!gridRef.current) {
+      alert("Grid not ready to save.");
+      return;
+    }
+    const name = prompt("Enter a name for the new layout:");
+    if (!name) return;
+    const layoutToSave = {
+      name,
+      gridData: gridRef.current,
+      gridSize,
+    };
+    try {
+      await createLayoutMutation.mutateAsync(layoutToSave);
+      alert("✅ New layout saved successfully!");
+    } catch (err) {
+      alert("❌ Save failed: " + err.message);
+    }
+  };
 
   const handleRobotPlaced = (pos) => {
     setSimulationState(prev => ({
@@ -241,6 +272,12 @@ export default function Simulator() {
               >
                 <Save className="w-4 h-4 mr-2" />
                 Save Layout
+              </button>
+              <button
+                onClick={handleNewLayout}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
+              >
+                + New Layout
               </button>
             </div>
           </div>

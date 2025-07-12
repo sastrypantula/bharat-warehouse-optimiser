@@ -229,7 +229,8 @@ export class SimulationEngine {
       'holiday': 1.8
     }[season] || 1;
     
-    return Math.round((fuelSavings + laborSavings + robotSavings) * seasonCostMultiplier);
+    // Clamp to zero to avoid negative savings
+    return Math.max(0, Math.round((fuelSavings + laborSavings + robotSavings) * seasonCostMultiplier));
   }
 
   calculateCarbonReduction(actualDistance, optimalDistance) {
