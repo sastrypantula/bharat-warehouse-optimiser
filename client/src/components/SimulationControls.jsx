@@ -15,9 +15,9 @@ export default function SimulationControls({
 }) {
   const seasons = [
     { value: 'normal', label: 'Normal Season', icon: '📅' },
-    { value: 'black-friday', label: 'Black Friday', icon: '🛍️' },
-    { value: 'christmas', label: 'Christmas', icon: '🎄' },
-    { value: 'holiday', label: 'Holiday Season', icon: '🎁' }
+    { value: 'black-friday', label: 'Disaster Relief', icon: ' 🚑 ' },
+    { value: 'christmas', label: 'Festival Rush', icon: '🧺' },
+    { value: 'holiday', label: 'Emergencies', icon: '🚨' }
   ];
 
   const getSeasonMultiplier = (season) => {
@@ -41,14 +41,14 @@ export default function SimulationControls({
         </h3>
         <div className="flex items-center gap-2 text-sm text-warehouse-600">
           <Calendar className="w-4 h-4" />
-          <span>Walmart Supply Chain Optimization</span>
+          <span>Supply Chain Optimization</span>
         </div>
       </div>
 
       {/* Season Selector */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-warehouse-700 mb-3">
-          🎄 Season Configuration
+           Configuration
         </label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {seasons.map((s) => (
@@ -112,7 +112,7 @@ export default function SimulationControls({
       {/* Robot Speed Control */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-warehouse-700 mb-2">
-          🤖 Robot Speed: {robotSpeed}x
+          🤖 Worker/Robot Speed: {robotSpeed}x
         </label>
         <input
           type="range"
@@ -199,10 +199,10 @@ export default function SimulationControls({
           <div className="text-blue-600">🏪</div>
           <div>
             <div className="text-sm font-medium text-blue-800">
-              Walmart Supply Chain Integration Ready
+              Supply Chain Integration Ready
             </div>
             <div className="text-xs text-blue-700">
-              Compatible with 4,700+ stores | Real-time WMS integration | Holiday optimization enabled
+              Compatible with 4,700+ stores | Real-time WMS integration | Configuration optimization enabled
             </div>
           </div>
         </div>

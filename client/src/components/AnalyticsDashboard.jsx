@@ -40,9 +40,9 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
   // Festive/holiday: always at least +15% efficiency, +25% savings
   const holidayData = [
     { period: 'Normal', efficiency: baseEfficiency, orders: 1000, costSavings: baseCostSavings },
-    { period: 'Black Friday', efficiency: getImprovement(baseEfficiency, 15), orders: 2500, costSavings: getImprovement(baseCostSavings, 25) },
-    { period: 'Christmas', efficiency: getImprovement(baseEfficiency, 12), orders: 2000, costSavings: getImprovement(baseCostSavings, 20) },
-    { period: 'New Year', efficiency: getImprovement(baseEfficiency, 10), orders: 1200, costSavings: getImprovement(baseCostSavings, 15) },
+    { period: 'Disaster Relief', efficiency: getImprovement(baseEfficiency, 15), orders: 2500, costSavings: getImprovement(baseCostSavings, 25) },
+    { period: 'Festival Rush', efficiency: getImprovement(baseEfficiency, 12), orders: 2000, costSavings: getImprovement(baseCostSavings, 20) },
+    { period: 'Emergencies', efficiency: getImprovement(baseEfficiency, 10), orders: 1200, costSavings: getImprovement(baseCostSavings, 15) },
   ];
 
   const timeSeriesData = [
@@ -93,7 +93,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <BarChart3 className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-warehouse-900">Walmart Supply Chain Analytics</h1>
+              <h1 className="text-2xl font-bold text-warehouse-900">Supply Chain Analytics</h1>
             </div>
             <button
               onClick={onClose}
@@ -108,7 +108,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* ROI Calculator */}
         <div className="bg-gradient-to-r from-blue-600 to-green-600 p-6 rounded-lg text-white mb-8">
-          <h2 className="text-2xl font-bold mb-4">💰 ROI Calculator - Walmart Impact</h2>
+          <h2 className="text-2xl font-bold mb-4">💰 ROI Calculator - Impact</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
               <p className="text-sm opacity-90">Annual Savings</p>
@@ -175,7 +175,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Holiday Season Impact */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-warehouse-200">
-            <h3 className="text-lg font-semibold text-warehouse-900 mb-4">🎄 Holiday Season Performance</h3>
+            <h3 className="text-lg font-semibold text-warehouse-900 mb-4">Configuration Performance</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={holidayData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -281,7 +281,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
         {/* Potential Impact Section */}
         <div className="mt-8 bg-gradient-to-r from-green-400 to-blue-500 p-6 rounded-lg text-white shadow-lg">
           <h3 className="text-xl font-bold mb-2">🌟 Potential Impact (Full Rollout)</h3>
-          <p className="text-lg">If Walmart adopts the best layout across all stores:</p>
+          <p className="text-lg">If PDS adopts the best layout across all Hubs:</p>
           <ul className="list-disc ml-6 mt-2 space-y-1">
             <li><b>${(potentialAnnualSavings / 1e9).toFixed(2)}B annual savings</b> in operational costs</li>
             <li><b>{potentialCarbonReduction}% reduction</b> in CO₂ emissions</li>
@@ -291,7 +291,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
 
         {/* Walmart-Specific Recommendations */}
         <div className="mt-8 bg-white p-6 rounded-lg shadow-sm border border-warehouse-200">
-          <h3 className="text-lg font-semibold text-warehouse-900 mb-4">🎯 Walmart-Specific Optimization Recommendations</h3>
+          <h3 className="text-lg font-semibold text-warehouse-900 mb-4">Specific Optimization Recommendations</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
               <h4 className="font-medium text-green-900 mb-2">💰 Immediate Cost Savings</h4>

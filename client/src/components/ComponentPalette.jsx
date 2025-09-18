@@ -15,7 +15,7 @@ export default function ComponentPalette({ selectedComponent, onComponentSelect,
     },
     {
       type: CellType.ROBOT_START,
-      name: "Robot Start",
+      name: "Robot/Worker Start Point",
       icon: "🤖",
       description: "Starting position for robot",
       bgColor: "#4ade80",
@@ -187,7 +187,7 @@ export default function ComponentPalette({ selectedComponent, onComponentSelect,
   <li>• Select a tool (shelf, robot, packing station)</li>
   <li>• Click grid cells to place components</li>
   <li>• Use 🗑️ Eraser to remove placed components</li>
-  <li>• Only one robot and one packing station allowed</li>
+  <li>• Only one robot/worker and one packing station allowed</li>
   <li>• Use 🗃️ shelf selector to add/remove order items</li>
 </ul>
       </div>

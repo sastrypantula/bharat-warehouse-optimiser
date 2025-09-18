@@ -25,7 +25,7 @@ export default function Simulator() {
     currentOrderItem: null,
     path: [],
     collectedShelves: [],
-    liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 100, costSavings: 0 },
+    liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 0, costSavings: 0 },
     shelfPositions: [],
     totalOptimalDistance: 0,
   });
@@ -255,7 +255,10 @@ export default function Simulator() {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Bot className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl font-bold text-warehouse-900">MFU Simulator</h1>
+                <h1 className="text-2xl CENTER font-bold text-warehouse-900">
+                  BHARAT WAREHOUSE OPTIMISER
+                  <img src="https://img.icons8.com/color/48/india.png" alt="India Flag" style={{ display: 'inline', marginLeft: 8, verticalAlign: 'middle', height: 32 }} />
+                </h1>
               </div>
             </div>
             <div className="flex items-center space-x-4">
