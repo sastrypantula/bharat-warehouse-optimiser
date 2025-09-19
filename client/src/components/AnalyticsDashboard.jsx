@@ -31,9 +31,9 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
 
   // Defensive fallback: always show three layouts for rankings
   let analyticsData = [
-    { name: 'Layout 1', efficiency: 100, distance: 2200, time: 33, costSavings: 1500, carbonReduction: 48 },
-    { name: 'Layout 2', efficiency: 95, distance: 2300, time: 35, costSavings: 1350, carbonReduction: 44 },
-    { name: 'Layout 3', efficiency: 90, distance: 2400, time: 37, costSavings: 1200, carbonReduction: 40 },
+    { name: 'Layout 1', metrics:{efficiency: 100, distance: 2200, time: 33, costSavings: 15, Co2: 48} },
+    { name: 'Layout 2', metrics:{efficiency: 95, distance: 2300, time: 35, costSavings: 13.5, Co2: 44 }},
+    { name: 'Layout 3', metrics:{efficiency: 90, distance: 2400, time: 37, costSavings: 12, Co2: 40} },
   ];
   let usingFallback = true;
 
