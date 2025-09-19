@@ -74,14 +74,14 @@ export const CellType = {
 // Sample layout for memory storage
 export function createSampleLayout() {
   return {
-    id: 1,
-    name: "Default Layout",
-    description: "Sample layout for simulator",
-    gridSize: 15,
-    gridData: Array.from({ length: 15 }, () =>
-      Array.from({ length: 15 }, () => 0)
-    ),
-    createdAt: new Date(),
+    // id: 1,
+    // name: "Default Layout",
+    // description: "Sample layout for simulator",
+    // gridSize: 15,
+    // gridData: Array.from({ length: 15 }, () =>
+    //   Array.from({ length: 15 }, () => 0)
+    // ),
+    // createdAt: new Date(),
   };
 }
 

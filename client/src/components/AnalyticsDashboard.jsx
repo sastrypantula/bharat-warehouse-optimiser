@@ -199,7 +199,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `₹{name} ₹{(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -219,7 +219,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={timeSeriesData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="time" />
+                <XAxis dataKey="time"  />
                 <YAxis />
                 <Tooltip />
                 <Line 
@@ -301,7 +301,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
             </div>
             <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
               <h4 className="font-medium text-purple-900 mb-2">⚡ Holiday Optimization</h4>
-              <p className="text-sm text-purple-700">Boost Black Friday efficiency by <b>15%</b>+ with AI routing</p>
+              <p className="text-sm text-purple-700">Boost Emergencies efficiency by <b>15%</b>+ with AI routing</p>
             </div>
           </div>
         </div>
