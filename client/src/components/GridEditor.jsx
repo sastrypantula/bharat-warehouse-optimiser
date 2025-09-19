@@ -10,7 +10,9 @@ export default function GridEditor({
   onRobotPlaced,
   shelfProductMap,
   setShelfProductMap,
-  onGridChange
+  onGridChange,
+  orderItem,
+  setOrderItem
 }) {
   const [gridData, setGridData] = useState(() => 
     Array(gridSize).fill(null).map(() => Array(gridSize).fill(CellType.EMPTY))
@@ -157,6 +159,9 @@ export default function GridEditor({
 
   const clearGrid = () => {
     setGridData(Array(gridSize).fill(null).map(() => Array(gridSize).fill(CellType.EMPTY)));
+    setShelfProductMap({});
+    onRobotPlaced?.(null);
+    setOrderItem([]);
   };
 
   const getGridStats = () => {

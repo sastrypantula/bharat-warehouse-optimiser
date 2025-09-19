@@ -25,7 +25,7 @@ export default function Simulator() {
     currentOrderItem: null,
     path: [],
     collectedShelves: [],
-    liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 0, costSavings: 0 },
+    liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 0, costSavings: 0,Co2:0 },
     shelfPositions: [],
     totalOptimalDistance: 0,
   });
@@ -57,9 +57,12 @@ export default function Simulator() {
       name,
       gridData: gridRef.current,
       gridSize,
+      metrics: simulationState.liveMetrics,
     };
     try {
-      await createLayoutMutation.mutateAsync(layoutToSave);
+     const response= await createLayoutMutation.mutateAsync(layoutToSave);
+     layouts.push(response);
+     console.log("New layout created:", response);
       alert("✅ New layout saved successfully!");
     } catch (err) {
       alert("❌ Save failed: " + err.message);
@@ -79,7 +82,7 @@ export default function Simulator() {
     for (let i = 1; i <= step && i < path.length; i++) {
       dist += Math.abs(path[i].x - path[i-1].x) + Math.abs(path[i].y - path[i-1].y);
     }
-    return dist * 100; // in cm
+    return dist * 100;
   }
 
   useEffect(() => {
@@ -106,6 +109,18 @@ export default function Simulator() {
         const totalOptimalDistance = prev.totalOptimalDistance || 1;
         const efficiency = totalDistance > 0 ? Math.min(Math.round((totalOptimalDistance / totalDistance) * 100), 100) : 100;
         const totalTime = robotSpeed > 0 ? (totalDistance / 100) / robotSpeed : 0;
+        const emissionFactor = 0.21; // kg CO₂ per km
+        const savedDistance = (simulationState.totalOptimalDistance - simulationState.liveMetrics.totalDistance) / 1000; // convert meters to km
+        const co2Reduction = savedDistance * emissionFactor;
+        const laborCostPerHour = 200;  // INR
+        const energyCostPerKm = 5;     // INR per km
+
+        const baselineTime = simulationState.totalOptimalDistance / 100 / robotSpeed; 
+        const baselineCost = (baselineTime / 3600) * laborCostPerHour + (simulationState.totalOptimalDistance / 1000) * energyCostPerKm;
+        const actualCost = (simulationState.liveMetrics.totalTime / 3600) * laborCostPerHour + (simulationState.liveMetrics.totalDistance / 1000) * energyCostPerKm;
+        const costSavings = baselineCost - actualCost;
+
+
         return {
           ...prev,
           currentStep: nextStep,
@@ -117,6 +132,8 @@ export default function Simulator() {
             totalDistance,
             totalTime: isNaN(totalTime) ? 0 : totalTime,
             efficiency,
+            costSavings: Math.round(costSavings),
+            Co2:co2Reduction.toFixed(2)
           },
         };
       });
@@ -207,7 +224,7 @@ export default function Simulator() {
       currentOrderItem: null,
       path: [],
       collectedShelves: [],
-      liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 100, costSavings: 0 },
+      liveMetrics: { totalDistance: 0, totalTime: 0, efficiency: 0, costSavings: 0, Co2:0 },
       shelfPositions: [],
       totalOptimalDistance: 0,
     });
@@ -351,6 +368,8 @@ export default function Simulator() {
               onRobotPlaced={handleRobotPlaced}
               shelfProductMap={shelfProductMap}
               setShelfProductMap={setShelfProductMap}
+              orderItem={orderItem}
+              setOrderItem={setOrderItem}
               onGridChange={(grid) => (gridRef.current = grid)}
             />
           </div>

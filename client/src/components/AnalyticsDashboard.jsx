@@ -6,7 +6,7 @@ import { Tooltip as ReactTooltip } from "react-tooltip";
 
 export default function AnalyticsDashboard({ layouts, simulationState, season, onClose }) {
   const [selectedLayout, setSelectedLayout] = useState(null);
-  const [storeCount, setStoreCount] = useState(4700); // Walmart's store count
+  const [storeCount, setStoreCount] = useState(56); // Walmart's store count
   const [dailyOrders, setDailyOrders] = useState(1000); // Average orders per store per day
 
   // Use dynamic simulation data if available
@@ -61,7 +61,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
     const dailySavingsPerStore = avgCostSavings;
     const annualSavingsPerStore = dailySavingsPerStore * 365;
     const totalAnnualSavings = annualSavingsPerStore * storeCount;
-    const implementationCost = storeCount * 50000; // $50k per store for implementation
+    const implementationCost = storeCount * 50000; // ₹50k per store for implementation
     const roi = ((totalAnnualSavings - implementationCost) / implementationCost) * 100;
     return {
       dailySavingsPerStore,
@@ -84,6 +84,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
   const bestLayout = analyticsData.reduce((a, b) => (a.costSavings > b.costSavings ? a : b), analyticsData[0]);
   const potentialAnnualSavings = bestLayout.costSavings * storeCount * 365;
   const potentialCarbonReduction = bestLayout.carbonReduction;
+  console.log("Using fallback analytics data:", layouts);
 
   return (
     <div className="min-h-screen bg-warehouse-50">
@@ -112,7 +113,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
               <p className="text-sm opacity-90">Annual Savings</p>
-              <p className="text-3xl font-bold">${(roiMetrics.totalAnnualSavings / 1000000).toFixed(1)}M</p>
+              <p className="text-3xl font-bold">₹{(roiMetrics.totalAnnualSavings / 1000000).toFixed(1)}M</p>
             </div>
             <div className="text-center">
               <p className="text-sm opacity-90">ROI</p>
@@ -120,11 +121,11 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
             </div>
             <div className="text-center">
               <p className="text-sm opacity-90">Per Store/Year</p>
-              <p className="text-3xl font-bold">${(roiMetrics.annualSavingsPerStore / 1000).toFixed(0)}K</p>
+              <p className="text-3xl font-bold">₹{(roiMetrics.annualSavingsPerStore / 1000).toFixed(0)}K</p>
             </div>
             <div className="text-center">
               <p className="text-sm opacity-90">Implementation Cost</p>
-              <p className="text-3xl font-bold">${(roiMetrics.implementationCost / 1000000).toFixed(1)}M</p>
+              <p className="text-3xl font-bold">₹{(roiMetrics.implementationCost / 1000000).toFixed(1)}M</p>
             </div>
           </div>
         </div>
@@ -164,8 +165,8 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
           <div className="bg-white p-6 rounded-lg shadow-sm border border-warehouse-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-warehouse-600">Stores Optimized</p>
-                <p className="text-3xl font-bold text-warehouse-900">{storeCount.toLocaleString()}</p>
+                <p className="text-sm font-medium text-warehouse-600">Waiting Time(Trucks)</p>
+                <p className="text-3xl font-bold text-warehouse-900">{storeCount.toLocaleString()}min</p>
               </div>
               <Truck className="w-8 h-8 text-orange-600" />
             </div>
@@ -182,7 +183,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
                 <XAxis dataKey="period" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="costSavings" fill="#10b981" name="Cost Savings ($)" />
+                <Bar dataKey="costSavings" fill="#10b981" name="Cost Savings (₹)" />
                 <Bar dataKey="efficiency" fill="#3b82f6" name="Efficiency (%)" />
               </BarChart>
             </ResponsiveContainer>
@@ -198,13 +199,13 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `₹{name} ₹{(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
                 >
                   {carbonFootprintData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-₹{index}`} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -245,27 +246,24 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
           <div className="bg-white p-6 rounded-lg shadow-sm border border-warehouse-200">
             <h3 className="text-lg font-semibold text-warehouse-900 mb-4">🏆 Layout Performance Rankings</h3>
             <div className="space-y-4">
-              {analyticsData
+              {(layouts && layouts.length > 0 ? layouts : analyticsData)
                 .sort((a, b) => b.efficiency - a.efficiency)
                 .slice(0, 5)
                 .map((layout, index) => (
                   <div key={layout.name} className="flex items-center justify-between p-3 bg-warehouse-50 rounded-lg">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${
-                        index === 0 ? 'bg-yellow-500' : 
-                        index === 1 ? 'bg-gray-400' : 
-                        index === 2 ? 'bg-amber-600' : 'bg-warehouse-400'
-                      }`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-black 
+                        `}>
                         {index + 1}
                       </div>
                       <div>
                         <p className="font-medium text-warehouse-900">{layout.name}</p>
-                        <p className="text-sm text-warehouse-600">{layout.efficiency}% efficiency</p>
+                        <p className="text-sm text-warehouse-600">{layout?.metrics?.efficiency}% efficiency</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-green-600">${layout.costSavings}/day</p>
-                      <p className="text-xs text-warehouse-600">{layout.carbonReduction}% CO₂ reduction</p>
+                      <p className="text-sm font-medium text-green-600">₹{(layout?.metrics?.costSavings)*100}/day</p>
+                      <p className="text-xs text-warehouse-600">{(layout?.metrics?.Co2)*100}% CO₂ reduction</p>
                     </div>
                   </div>
                 ))}
@@ -283,7 +281,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
           <h3 className="text-xl font-bold mb-2">🌟 Potential Impact (Full Rollout)</h3>
           <p className="text-lg">If PDS adopts the best layout across all Hubs:</p>
           <ul className="list-disc ml-6 mt-2 space-y-1">
-            <li><b>${(potentialAnnualSavings / 1e9).toFixed(2)}B annual savings</b> in operational costs</li>
+            <li><b>₹{(potentialAnnualSavings / 1e9).toFixed(2)}B annual savings</b> in operational costs</li>
             <li><b>{potentialCarbonReduction}% reduction</b> in CO₂ emissions</li>
             <li>Break-even in <b>8 months</b> (see timeline below)</li>
           </ul>
@@ -295,7 +293,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
               <h4 className="font-medium text-green-900 mb-2">💰 Immediate Cost Savings</h4>
-              <p className="text-sm text-green-700">Implement <b>{bestLayout.name}</b> for up to <b>${(bestLayout.costSavings * storeCount * 365 / 1e9).toFixed(2)}B/year</b> in savings</p>
+              <p className="text-sm text-green-700">Implement <b>{bestLayout.name}</b> for up to <b>₹{(bestLayout.costSavings * storeCount * 365 / 1e9).toFixed(2)}B/year</b> in savings</p>
             </div>
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-2">🌱 Sustainability Impact</h4>

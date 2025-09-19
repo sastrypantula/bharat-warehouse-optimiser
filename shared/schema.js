@@ -8,6 +8,7 @@ export const layouts = pgTable("layouts", {
   description: text("description"),
   gridSize: integer("grid_size").notNull().default(15),
   gridData: json("grid_data").notNull(),
+  metrics: json("metrics"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
