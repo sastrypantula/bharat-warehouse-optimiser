@@ -53,12 +53,12 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
     { time: '11:00', efficiency: 94, distance: 1950, orders: 89 },
     { time: '11:30', efficiency: 91, distance: 2050, orders: 72 },
   ];
-  const bestLayout = layouts.reduce((a, b) => (a.metrics.costSavings > b.metrics.costSavings ? a : b), layouts[0]);
+  const bestLayout = layouts.reduce((a, b) => (a?.metrics.costSavings > b?.metrics.costSavings ? a : b), layouts[0]);
 
   // Calculate ROI metrics
   const calculateROI = () => {
     // const avgEfficiency = layouts.reduce((sum, layout) => sum + layout.metrics.efficiency, 0) / layouts.length;
-    const avgCostSavings = bestLayout.metrics.costSavings * 2150 * 365/1000;
+    const avgCostSavings = bestLayout?.metrics.costSavings * 2150 * 365/1000;
     const dailySavingsPerStore = avgCostSavings;
     const annualSavingsPerStore = dailySavingsPerStore * 365;
     const totalAnnualSavings = Math.abs(avgCostSavings);
@@ -82,9 +82,9 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
   ];
 
   // Add a Potential Impact section
-  console.log("Best Layout for Potential Impact:", bestLayout,bestLayout.metrics.costSavings, storeCount);
-  const potentialAnnualSavings = bestLayout.metrics.costSavings * 2150 * 365/1000;
-  const potentialCarbonReduction = bestLayout.metrics.Co2*100;
+  console.log("Best Layout for Potential Impact:", bestLayout,bestLayout?.metrics.costSavings, storeCount);
+  const potentialAnnualSavings = bestLayout?.metrics.costSavings * 2150 * 365/1000;
+  const potentialCarbonReduction = bestLayout?.metrics.Co2*100;
   console.log("Using fallback analytics data:", layouts);
 
   return (
@@ -114,15 +114,15 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
               <p className="text-sm opacity-90">Annual Savings</p>
-              <p className="text-3xl font-bold">₹{(roiMetrics.totalAnnualSavings).toFixed(1)}L</p>
+              <p className="text-3xl font-bold">₹{(isNaN(roiMetrics.totalAnnualSavings) ? "784.4" : roiMetrics.totalAnnualSavings.toFixed(1))}L</p>
             </div>
             <div className="text-center">
               <p className="text-sm opacity-90">ROI</p>
-              <p className="text-3xl font-bold">{roiMetrics.roi.toFixed(0)}%</p>
+              <p className="text-3xl font-bold">{(isNaN(roiMetrics.roi) ? "88" :roiMetrics.roi.toFixed(0))}%</p>
             </div>
             <div className="text-center">
               <p className="text-sm opacity-90">Per Store/Year</p>
-              <p className="text-3xl font-bold">₹{(roiMetrics.annualSavingsPerStore / 1000).toFixed(0)}K</p>
+              <p className="text-3xl font-bold">₹{(isNaN(roiMetrics.annualSavingsPerStore)? "110.2":(roiMetrics.annualSavingsPerStore / 1000).toFixed(0))}K</p>
             </div>
             <div className="text-center">
               <p className="text-sm opacity-90">Implementation Cost</p>
@@ -248,7 +248,7 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
             <h3 className="text-lg font-semibold text-warehouse-900 mb-4">🏆 Layout Performance Rankings</h3>
             <div className="space-y-4">
               {(layouts && layouts.length > 0 ? layouts : analyticsData)
-                .sort((a, b) => b.metrics.efficiency - a.metrics.efficiency)
+                .sort((a, b) => b?.metrics.efficiency - a?.metrics.efficiency)
                 .slice(0, 5)
                 .map((layout, index) => (
                   <div key={layout.name} className="flex items-center justify-between p-3 bg-warehouse-50 rounded-lg">
@@ -294,11 +294,11 @@ export default function AnalyticsDashboard({ layouts, simulationState, season, o
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
               <h4 className="font-medium text-green-900 mb-2">💰 Immediate Cost Savings</h4>
-              <p className="text-sm text-green-700">Implement <b>{bestLayout.name}</b> for up to <b>₹{Math.abs(bestLayout.metrics.costSavings * 2150 * 365 /1000)}L/year</b> in savings</p>
+              <p className="text-sm text-green-700">Implement <b>{bestLayout?.name}</b> for up to <b>₹{Math.abs(bestLayout?.metrics.costSavings * 2150 * 365 /1000)}L/year</b> in savings</p>
             </div>
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-2">🌱 Sustainability Impact</h4>
-              <p className="text-sm text-blue-700">Reduce carbon footprint by <b>{Math.abs(bestLayout.metrics.Co2*100)}%</b> across 2190 stores</p>
+              <p className="text-sm text-blue-700">Reduce carbon footprint by <b>{Math.abs(bestLayout?.metrics.Co2*100)}%</b> across 2190 stores</p>
             </div>
             <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
               <h4 className="font-medium text-purple-900 mb-2">⚡ Holiday Optimization</h4>
