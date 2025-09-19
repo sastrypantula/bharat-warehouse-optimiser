@@ -23,15 +23,15 @@ export class MemStorage {
     });
 
     // Create a default warehouse layout
-    const defaultLayout = createSampleLayout();
+    // const defaultLayout = createSampleLayout();
 
-    const id = this.currentLayoutId++;
-    const layout = { 
-      ...defaultLayout, 
-      id,
-      createdAt: new Date().toISOString()
-    };
-    this.layouts.set(id, layout);
+    // const id = this.currentLayoutId++;
+    // const layout = { 
+    //   ...defaultLayout, 
+    //   id,
+    //   createdAt: new Date().toISOString()
+    // };
+    // this.layouts.set(id, layout);
   }
 
   // Layout operations
